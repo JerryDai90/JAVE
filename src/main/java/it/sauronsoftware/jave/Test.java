@@ -5,8 +5,10 @@ import java.io.File;
 public class Test {
 
     public static void main(String[] args) {
-        changeToMp3("z:\\test.amr",
-                "z:\\test.mp3");
+//        changeToMp3("z:\\test.amr",
+//                "z:\\test.mp3");
+        changeToMp3("/Users/jerry/Mix/temp/2_share_vm/test.amr",
+                "/Users/jerry/Mix/temp/2_share_vm/test.mp3");
     }
 
 

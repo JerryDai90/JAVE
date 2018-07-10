@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Properties;
 
 /**
  * The default ffmpeg executable locator, which exports on disk the ffmpeg
@@ -81,12 +83,31 @@ public class DefaultFFMPEGLocator extends FFMPEGLocator {
 		}else{
 			relativePath = "linux";
 		}
-		URL resource = this.getClass().getResource("/system/"+relativePath);
-		try {
-			FileUtils.copyDirectory(new File(resource.getPath()), temp);
-		} catch (IOException e) {
-			e.printStackTrace();
+
+		String[] fileLists = getFileLists(relativePath);
+		for( String fileName : fileLists ){
+			File _temp = new File(temp.getPath()+File.separator+fileName);
+			copyFile("/system/"+relativePath+"/"+fileName, _temp);
 		}
+
+
+
+
+//		URL resource = this.getClass().getResource("/system/"+relativePath);
+//
+//
+//
+////		Object content = resource.getContent();
+////		System.out.println(content);
+//
+//
+////		this.getClass().get
+//
+//		try {
+//			FileUtils.copyDirectory(new File(resource.getPath()), temp);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 
 		String ffmpeg = isWindows ? "ffmpeg.exe" : "ffmpeg";
 		String absolutePath = temp+File.separator+ffmpeg;
@@ -120,6 +141,21 @@ public class DefaultFFMPEGLocator extends FFMPEGLocator {
 
 	protected String getFFMPEGExecutablePath() {
 		return path;
+	}
+
+
+	private String[] getFileLists(String key){
+
+		try (
+			InputStream resourceAsStream = this.getClass().getResourceAsStream("/system/config.properties");
+		) {
+			Properties properties = new Properties();
+			properties.load(resourceAsStream);
+			String value = properties.get(key).toString();
+			return value.split(";");
+		}catch (Exception e){
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
