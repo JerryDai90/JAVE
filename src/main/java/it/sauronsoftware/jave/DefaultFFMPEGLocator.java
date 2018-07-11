@@ -34,170 +34,132 @@ import java.util.Properties;
  * executable bundled with the library distributions. It should work both for
  * windows and many linux distributions. If it doesn't, try compiling your own
  * ffmpeg executable and plug it in JAVE with a custom {@link FFMPEGLocator}.
- * 
+ *
  * @author Carlo Pelliccia
  */
 public class DefaultFFMPEGLocator extends FFMPEGLocator {
 
-	/**
-	 * Trace the version of the bundled ffmpeg executable. It's a counter: every
-	 * time the bundled ffmpeg change it is incremented by 1.
-	 */
-	private static final int myEXEversion = 1;
+    /**
+     * Trace the version of the bundled ffmpeg executable. It's a counter: every
+     * time the bundled ffmpeg change it is incremented by 1.
+     */
+    private static final int myEXEversion = 1;
 
-	/**
-	 * The ffmpeg executable file path.
-	 */
-	private String path;
+    /**
+     * The ffmpeg executable file path.
+     */
+    private String path;
 
-	/**
-	 * It builds the default FFMPEGLocator, exporting the ffmpeg executable on a
-	 * temp file.
-	 */
-	public DefaultFFMPEGLocator() {
-		// Windows?
-		boolean isWindows;
-		//MacOS
-		boolean isMacOS;
-		String os = System.getProperty("os.name").toLowerCase();
-		if (os.indexOf("windows") != -1) {
-			isWindows = true;
-		} else {
-			isWindows = false;
-		}
-		isMacOS = os.indexOf("mac") != -1;
+    /**
+     * It builds the default FFMPEGLocator, exporting the ffmpeg executable on a
+     * temp file.
+     */
+    public DefaultFFMPEGLocator() {
+        // Windows?
+        boolean isWindows;
+        //MacOS
+        boolean isMacOS;
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.indexOf("windows") != -1) {
+            isWindows = true;
+        } else {
+            isWindows = false;
+        }
+        isMacOS = os.indexOf("mac") != -1;
 
-		// Temp dir?
-		File temp = new File(System.getProperty("java.io.tmpdir"), "jave-"
-				+ myEXEversion);
-		if (!temp.exists()) {
-			temp.mkdirs();
-			temp.deleteOnExit();
-		}
+        // Temp dir?
+        File temp = new File(System.getProperty("java.io.tmpdir"), "jave-"
+                + myEXEversion);
+        if (!temp.exists()) {
+            temp.mkdirs();
+            temp.deleteOnExit();
+        }
 
-		String relativePath = null;
-		if( isMacOS ){
-			relativePath = "macos10";
-		}else if( isWindows ){
-			relativePath = "windows";
-		}else{
-			relativePath = "linux";
-		}
+        String relativePath = null;
+        if (isMacOS) {
+            relativePath = "macos10";
+        } else if (isWindows) {
+            relativePath = "windows";
+        } else {
+            relativePath = "linux";
+        }
 
-		String[] fileLists = getFileLists(relativePath);
-		for( String fileName : fileLists ){
-			File _temp = new File(temp.getPath()+File.separator+fileName);
-			copyFile("/system/"+relativePath+"/"+fileName, _temp);
-		}
+        String[] fileLists = getFileLists(relativePath);
+        for (String fileName : fileLists) {
+            File _temp = new File(temp.getPath() + File.separator + fileName);
+            copyFile("/system/" + relativePath + "/" + fileName, _temp);
+        }
 
+        String ffmpeg = isWindows ? "ffmpeg.exe" : "ffmpeg";
+        String absolutePath = temp + File.separator + ffmpeg;
 
+        // Need a chmod?
+        if (!isWindows) {
+            Runtime runtime = Runtime.getRuntime();
+            try {
+                runtime.exec(new String[]{"/bin/chmod", "755",
+                        absolutePath});
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        // Ok.
+        this.path = absolutePath;
+    }
 
-
-//		URL resource = this.getClass().getResource("/system/"+relativePath);
-//
-//
-//
-////		Object content = resource.getContent();
-////		System.out.println(content);
-//
-//
-////		this.getClass().get
-//
-//		try {
-//			FileUtils.copyDirectory(new File(resource.getPath()), temp);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-
-		String ffmpeg = isWindows ? "ffmpeg.exe" : "ffmpeg";
-		String absolutePath = temp+File.separator+ffmpeg;
-
-//		// ffmpeg executable export on disk.
-//		String suffix = isWindows ? ".exe" : "";
-//		File exe = new File(temp, "ffmpeg" + suffix);
-//		if (!exe.exists()) {
-//			copyFile("ffmpeg" + suffix, exe);
-//		}
-//		// pthreadGC2.dll
-//		if (isWindows) {
-//			File dll = new File(temp, "pthreadGC2.dll");
-//			if (!dll.exists()) {
-//				copyFile("pthreadGC2.dll", dll);
-//			}
-//		}
-		// Need a chmod?
-		if (!isWindows) {
-			Runtime runtime = Runtime.getRuntime();
-			try {
-				runtime.exec(new String[] { "/bin/chmod", "755",
-						absolutePath });
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		// Ok.
-		this.path = absolutePath;
-	}
-
-	protected String getFFMPEGExecutablePath() {
-		return path;
-	}
+    protected String getFFMPEGExecutablePath() {
+        return path;
+    }
 
 
-	private String[] getFileLists(String key){
+    private String[] getFileLists(String key) {
 
-		try (
-			InputStream resourceAsStream = this.getClass().getResourceAsStream("/system/config.properties");
-		) {
-			Properties properties = new Properties();
-			properties.load(resourceAsStream);
-			String value = properties.get(key).toString();
-			return value.split(";");
-		}catch (Exception e){
-			throw new RuntimeException(e);
-		}
-	}
+        try (
+                InputStream resourceAsStream = this.getClass().getResourceAsStream("/system/config.properties");
+        ) {
+            Properties properties = new Properties();
+            properties.load(resourceAsStream);
+            String value = properties.get(key).toString();
+            return value.split(";");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	/**
-	 * Copies a file bundled in the package to the supplied destination.
-	 * 
-	 * @param path
-	 *            The name of the bundled file.
-	 * @param dest
-	 *            The destination.
-	 * @throws RuntimeException
-	 *             If aun unexpected error occurs.
-	 */
-	private void copyFile(String path, File dest) throws RuntimeException {
-		InputStream input = null;
-		OutputStream output = null;
-		try {
-			input = getClass().getResourceAsStream(path);
-			output = new FileOutputStream(dest);
-			byte[] buffer = new byte[1024];
-			int l;
-			while ((l = input.read(buffer)) != -1) {
-				output.write(buffer, 0, l);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException("Cannot write file "
-					+ dest.getAbsolutePath());
-		} finally {
-			if (output != null) {
-				try {
-					output.close();
-				} catch (Throwable t) {
-					;
-				}
-			}
-			if (input != null) {
-				try {
-					input.close();
-				} catch (Throwable t) {
-					;
-				}
-			}
-		}
-	}
+    /**
+     * Copies a file bundled in the package to the supplied destination.
+     *
+     * @param path The name of the bundled file.
+     * @param dest The destination.
+     * @throws RuntimeException If aun unexpected error occurs.
+     */
+    private void copyFile(String path, File dest) throws RuntimeException {
+        InputStream input = null;
+        OutputStream output = null;
+        try {
+            input = getClass().getResourceAsStream(path);
+            output = new FileOutputStream(dest);
+            byte[] buffer = new byte[1024];
+            int l;
+            while ((l = input.read(buffer)) != -1) {
+                output.write(buffer, 0, l);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot write file " + dest.getAbsolutePath());
+        } finally {
+            if (output != null) {
+                try {
+                    output.close();
+                } catch (Throwable t) {
+                }
+            }
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (Throwable t) {
+                }
+            }
+        }
+    }
 
 }
